@@ -93,7 +93,7 @@ export const prepareEditCharacterData = ({ formData, character }) => {
   const characterSpecies = species
     ? {
         ...character.species,
-        id: character.species.id ?? species.value,
+        id: character.species?.id ?? species.value,
         name: species.label,
       }
     : null

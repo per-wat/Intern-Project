@@ -3,6 +3,7 @@ import { Typography } from "@material-ui/core"
 import { useLazyQuery } from "@apollo/client"
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/router"
+import { findIndex } from "lodash"
 
 import CharactersTable from "./CharactersTable/CharactersTable"
 import RightSideDrawer from "../RightSideDrawer/RightSideDrawer"
@@ -35,6 +36,7 @@ export default function CharactersPage() {
       notifyOnNetworkStatusChange: true,
     })
 
+  /* This is for the table data fetching */
   useEffect(() => {
     fetchCharacters({
       variables: {
@@ -43,10 +45,16 @@ export default function CharactersPage() {
     })
   }, [])
 
+  const characters = useMemo(() => {
+    if (!data) return []
+    return data.allPeople.people
+  }, [data])
+
   const isFormOpen = useMemo(() => {
     return params && Object.values(formModeEnum).includes(params[0])
   }, [params])
 
+  /* This is to validate the pathname */
   useEffect(() => {
     if (!params) return
 
@@ -59,10 +67,18 @@ export default function CharactersPage() {
     }
   }, [params, isFormOpen])
 
-  const characters = useMemo(() => {
-    if (!data) return []
-    return data.allPeople.people
-  }, [data])
+  /* This is to validate the character is valid to edit */
+  useEffect(() => {
+    if (!params) return
+
+    const characterIndex = findIndex(characters, (character) => {
+      return character.id === params[1]
+    })
+
+    if (characterIndex === -1) {
+      handleCloseForm()
+    }
+  }, [params, characters])
 
   const pageInfo = data?.allPeople.pageInfo
   const totalRowsCount = data?.allPeople.totalCount

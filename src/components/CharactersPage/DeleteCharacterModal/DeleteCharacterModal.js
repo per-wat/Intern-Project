@@ -1,15 +1,13 @@
-import {
-  DialogActions,
-  DialogContent,
-  Typography,
-  makeStyles,
-} from "@material-ui/core"
-import { useDispatch } from "react-redux"
+import { makeStyles } from "@material-ui/core"
+import { useApolloClient } from "@apollo/client"
 
 import AlertModal from "@/components/AlertModal"
 import CancelButton from "@/components/Buttons/CancelButton/CancelButton"
 import DeleteButton from "@/components/Buttons/DeleteButton/DeleteButton"
-import { deleteCharacter } from "@/actions/characterActions"
+import {
+  GET_ALL_CHARACTERS,
+  GET_CHARACTER,
+} from "@/graphql/queries/characterQueries"
 
 const useStyles = makeStyles((theme) => ({
   body: {
@@ -27,11 +25,30 @@ const useStyles = makeStyles((theme) => ({
 
 const DeleteCharacterModal = ({ isModalOpen, onClose, character }) => {
   const classes = useStyles()
+  const client = useApolloClient()
 
-  const dispatch = useDispatch()
+  const onDelete = () => {
+    client.cache.modify({
+      id: client.cache.identify({
+        __typename: "Query",
+        id: "ROOT_QUERY",
+      }),
+      fields: {
+        allPeople(existing) {
+          const characterToDelete = `Person:${character.id}`
 
-  const handleOnClick = () => {
-    dispatch(deleteCharacter(character.id))
+          const newPeople = existing.people.filter(
+            (character) => character.__ref !== characterToDelete
+          )
+
+          return {
+            ...existing,
+            people: newPeople,
+          }
+        },
+      },
+    })
+    onClose()
   }
 
   if (!character) return
@@ -45,7 +62,7 @@ const DeleteCharacterModal = ({ isModalOpen, onClose, character }) => {
       <div className={classes.body}>{character.name}</div>
       <div className={classes.button}>
         <CancelButton onClick={onClose} />
-        <DeleteButton onClick={handleOnClick} />
+        <DeleteButton onClick={onDelete} />
       </div>
     </AlertModal>
   )
